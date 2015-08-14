@@ -28,13 +28,17 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.PowerManager;
 import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -109,23 +113,36 @@ public class RedPhone extends Activity {
   private CallScreen callScreen;
   private BroadcastReceiver bluetoothStateReceiver;
 
+  private SensorManager sensorManager;
+  private Sensor proximitySensor;
+  private ProximitySensorListener proximityListener;
+  private boolean earDetected = false;
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     startServiceIfNecessary();
     requestWindowFeature(Window.FEATURE_NO_TITLE);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|
-            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD|
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED|
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
             WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     setContentView(R.layout.main);
 
     setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
 
     initializeResources();
-  }
 
+    // get proximity sensor and needed wake lock for ear detection
+    sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+    proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+    if (proximitySensor != null)
+    {
+      proximityListener = new ProximitySensorListener();
+      registerProximitySensor(proximityListener);
+    }
+  }
 
   @Override
   public void onResume() {
@@ -142,6 +159,16 @@ public class RedPhone extends Activity {
 
     unbindService(serviceConnection);
     unregisterReceiver(bluetoothStateReceiver);
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+
+    // explicitly not in onPause because screen off pauses activity
+    if (proximitySensor != null) {
+      unregisterProximitySensorListener(proximityListener);
+    }
   }
 
   @Override
@@ -387,9 +414,38 @@ public class RedPhone extends Activity {
   private void delayedFinish(int delayMillis) {
     callStateHandler.postDelayed(new Runnable() {
 
-    public void run() {
-      RedPhone.this.finish();
-    }}, delayMillis);
+      public void run() {
+        RedPhone.this.finish();
+      }
+    }, delayMillis);
+  }
+
+  private void registerProximitySensor(ProximitySensorListener listener){
+    sensorManager.registerListener(listener, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+  }
+
+  private void unregisterProximitySensorListener(ProximitySensorListener listener){
+    sensorManager.unregisterListener(listener);
+  }
+
+  private void handleEarDetected(){
+    if (!earDetected)
+    {
+      earDetected = true;
+      WindowManager.LayoutParams params = getWindow().getAttributes();
+      params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_OFF;
+      getWindow().setAttributes(params);
+    }
+  }
+
+  private void handleEarNotDetected(){
+    if (earDetected){
+      earDetected = false;
+      WindowManager.LayoutParams params = getWindow().getAttributes();
+      // won't turn the screen back on if really off
+      params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+      getWindow().setAttributes(params);
+    }
   }
 
   private class CallStateHandler extends Handler {
@@ -485,6 +541,35 @@ public class RedPhone extends Activity {
     @Override
     public void onDenyClick() {
       RedPhone.this.handleDenyCall();
+    }
+  }
+
+  private class ProximitySensorListener implements SensorEventListener {
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+      float maxRange = proximitySensor.getMaximumRange();
+      float distance = sensorEvent.values[0];
+
+      // handle low precission sensor
+      if (maxRange <= 5.0f) {
+        if (maxRange-distance <= 1.0f) {
+          RedPhone.this.handleEarNotDetected();
+        } else {
+          RedPhone.this.handleEarDetected();
+        }
+      } else {
+        if (distance <= 5.0f) {
+          RedPhone.this.handleEarDetected();
+        } else {
+          RedPhone.this.handleEarNotDetected();
+        }
+      }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
     }
   }
 
