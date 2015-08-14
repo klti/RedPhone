@@ -120,6 +120,8 @@
     <string name="preferences__general_settings">General Settings</string>
     <string name="preferences__prompt_for_call_upgrade">Prompt for call upgrade</string>
     <string name="preferences__when_making_insecure_calls_prompt_for_upgrade_to_redphone_if_contact_is_redphone_enabled">When making insecure calls, prompt for upgrade to RedPhone if contact is RedPhone-enabled.</string>
+    <string name="preferences__require_unlock">Require unlock to accept call</string>
+    <string name="preferences__require_unlock_summary">Require to unlock the device to accept an incoming call</string>
     <string name="preferences__advanced_audio_settings">Advanced: Audio Settings</string>
     <string name="preferences__disable_bluetooth">Enable Bluetooth</string>
     <string name="preferences__disable_bluetooth_summary">Disabling Bluetooth may resolve audio issues on some devices</string>

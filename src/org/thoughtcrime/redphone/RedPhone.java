@@ -46,6 +46,7 @@ import org.thoughtcrime.redphone.codec.CodecSetupException;
 import org.thoughtcrime.redphone.contacts.PersonInfo;
 import org.thoughtcrime.redphone.crypto.zrtp.SASInfo;
 import org.thoughtcrime.redphone.directory.DirectoryUpdateReceiver;
+import org.thoughtcrime.redphone.ui.ApplicationPreferencesActivity;
 import org.thoughtcrime.redphone.ui.CallControls;
 import org.thoughtcrime.redphone.ui.CallScreen;
 import org.thoughtcrime.redphone.util.AudioUtils;
@@ -115,10 +116,12 @@ public class RedPhone extends Activity {
 
     startServiceIfNecessary();
     requestWindowFeature(Window.FEATURE_NO_TITLE);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON|
-            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD|
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED|
-            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    if (!ApplicationPreferencesActivity.getRequireDeviceunlockPreference(this)) {
+      getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+              WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+              WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+              WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
     setContentView(R.layout.main);
 
     setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
@@ -207,7 +210,7 @@ public class RedPhone extends Activity {
   private void handleAnswerCall() {
     state = STATE_ANSWERING;
     callScreen.setActiveCall(redPhoneService.getRemotePersonInfo(),
-                             getString(R.string.RedPhone_answering));
+            getString(R.string.RedPhone_answering));
 
     Intent intent = new Intent(this, RedPhoneService.class);
     intent.setAction(RedPhoneService.ACTION_ANSWER_CALL);
@@ -234,7 +237,7 @@ public class RedPhone extends Activity {
   private void handleOutgoingCall(String remoteNumber) {
     state = STATE_DIALING;
     callScreen.setActiveCall(PersonInfo.getInstance(this, remoteNumber),
-                             getString(R.string.RedPhone_dialing));
+            getString(R.string.RedPhone_dialing));
   }
 
   private void handleTerminate( int terminationType ) {
@@ -285,7 +288,7 @@ public class RedPhone extends Activity {
 
   private void handleConnectingToInitiator() {
     callScreen.setActiveCall(redPhoneService.getRemotePersonInfo(),
-                             getString(R.string.RedPhone_connecting));
+            getString(R.string.RedPhone_connecting));
   }
 
   private void handleHandshakeFailed() {
@@ -304,20 +307,20 @@ public class RedPhone extends Activity {
 
   private void handlePerformingHandshake() {
     callScreen.setActiveCall(redPhoneService.getRemotePersonInfo(),
-                             getString(R.string.RedPhone_performing_handshake));
+            getString(R.string.RedPhone_performing_handshake));
   }
 
   private void handleServerFailure() {
     state = STATE_IDLE;
     callScreen.setActiveCall(redPhoneService.getRemotePersonInfo(),
-                              getString(R.string.RedPhone_server_failed_exclamation));
+            getString(R.string.RedPhone_server_failed_exclamation));
     delayedFinish();
   }
 
   private void handleClientFailure(String msg) {
     state = STATE_IDLE;
     callScreen.setActiveCall(redPhoneService.getRemotePersonInfo(),
-                             getString(R.string.RedPhone_client_failed));
+            getString(R.string.RedPhone_client_failed));
     if( msg != null && !isFinishing() ) {
       AlertDialog.Builder ad = new AlertDialog.Builder(this);
       ad.setTitle("Fatal Error");

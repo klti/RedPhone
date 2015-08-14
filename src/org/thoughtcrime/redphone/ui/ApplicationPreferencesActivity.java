@@ -39,6 +39,7 @@ public class ApplicationPreferencesActivity extends SherlockPreferenceActivity {
 
   public static final String LOOPBACK_MODE_PREF         = "pref_loopback";
   public static final String OPPORTUNISTIC_UPGRADE_PREF = "pref_prompt_upgrade";
+  public static final String REQUIRE_DEVICE_UNLOCK_PREF = "pref_require_unlock";
   public static final String BLUETOOTH_ENABLED          = "pref_bluetooth_enabled";
 
   @Override
@@ -73,6 +74,11 @@ public class ApplicationPreferencesActivity extends SherlockPreferenceActivity {
   public static boolean getPromptUpgradePreference(Context context) {
     return PreferenceManager
            .getDefaultSharedPreferences(context).getBoolean(OPPORTUNISTIC_UPGRADE_PREF, true);
+  }
+
+  public static boolean getRequireDeviceunlockPreference(Context context) {
+    return PreferenceManager
+            .getDefaultSharedPreferences(context).getBoolean(REQUIRE_DEVICE_UNLOCK_PREF, true);
   }
 
   public static boolean getLoopbackEnabled(Context context) {
